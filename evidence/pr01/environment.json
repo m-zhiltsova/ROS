@@ -1,0 +1,11 @@
+{
+  "os": "Ubuntu 26.04",
+  "architecture": "x86_64",
+  "ros_distro": "lyrical",
+  "domains_tested": [
+    16,
+    17
+  ],
+  "rmw_implementation": "rmw_fastrtps_cpp",
+  "image_digest": "sha256:e6b1cb530b65588279681db53784e264ce5cf83f2cc33e689d27d6024d7f3ebe"
+}

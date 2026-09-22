@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "practice_id": "PR01",
+  "commit": "da4345329f8ede280d071a543ea5aea12e6f9e84",
+  "student": "Zhiltsova Marina",
+  "environment": "distrobox (Arch Linux + i3wm), ROS 2 Lyrical",
+  "course_kit": {
+    "version": "v1-w01",
+    "archive_sha256": "57866a9c98fa3abdec27b35a180697ee680bfb0f05cc015970ce306d6d849fea"
+  },
+  "commands": [
+    "docker run -d --name pr01-student-demo --hostname pr01-demo --network bridge -e DISPLAY -e XAUTHORITY=/tmp/pr01.xauth -e ROS_DOMAIN_ID=16 -v /tmp/.X11-unix:/tmp/.X11-unix:ro -v \"$XAUTHORITY:/tmp/pr01.xauth:ro\" -v \"$PWD:/work\" -w /work osrf/ros:lyrical-desktop-full@sha256:e6b1cb530b65588279681db53784e264ce5cf83f2cc33e689d27d6024d7f3ebe sleep infinity",
+    "docker exec -it pr01-student-demo bash",
+    "source /opt/ros/lyrical/setup.bash",
+    "export ROS_DOMAIN_ID=16",
+    "ros2 run turtlesim turtlesim_node",
+    "ros2 run turtlesim turtle_teleop_key",
+    "ros2 doctor --report > evidence/pr01/doctor.txt 2>&1",
+    "ros2 node list --no-daemon --spin-time 2 > evidence/pr01/nodes-before.txt",
+    "ros2 topic list -t > evidence/pr01/topics.txt",
+    "ros2 topic hz /turtle1/pose"
+  ],
+  "tests": [
+    {
+      "name": "node_discovery",
+      "description": "Проверка обнаружения нод turtlesim и teleop",
+      "status": "passed"
+    },
+    {
+      "name": "topic_communication",
+      "description": "Проверка доставки сообщений /turtle1/pose",
+      "status": "passed"
+    },
+    {
+      "name": "domain_isolation",
+      "description": "Проверка изоляции через ROS_DOMAIN_ID",
+      "status": "passed"
+    }
+  ],
+  "defect": {
+    "reproducer": "Запустить turtlesim_node в домене 16, затем turtle_teleop_key в домене 17. Нажать стрелку управления.",
+    "root_cause": "ROS_DOMAIN_ID используется для изоляции multicast-трафика DDS. Ноды в разных доменах не видят друг друга, поэтому команды управления не доставляются до симулятора.",
+    "proof_after": "После возврата turtle_teleop_key в домен 16, нажатие стрелки снова перемещает черепаху, что подтверждается изменением координат в /turtle1/pose."
+  },
+  "time": {
+    "contact_academic_hours": 2,
+    "self_study_hours": 3
+  },
+  "ai_used": true,
+  "claims": {
+    "public_tests_passed": true,
+    "defect_reproduced": true,
+    "defect_fixed": true
+  }
+}
