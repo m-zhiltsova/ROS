@@ -36,7 +36,8 @@ class Patrol(Node):
             Pose, '/turtle1/pose', self.on_pose, 10)
         self.publisher = self.create_publisher(Twist, 'cmd_vel', 10)
         self.timer = self.create_timer(1.0 / self.publish_hz, self.tick)
-        self.add_on_set_parameters_callback(self.validate)
+        # TEMPORARILY DISABLED for defect reproduction (PR04, side branch)
+        # self.add_on_set_parameters_callback(self.validate)
         self.add_post_set_parameters_callback(self.apply)
 
     def on_pose(self, message):
