@@ -1,0 +1,61 @@
+# ПР04. Результаты тестов
+
+Среда: контейнер `ros2-lyrical` (ROS 2 Lyrical), из корня workspace
+после `source /opt/ros/lyrical/setup.bash && source install/setup.bash`.
+
+## 1. Тесты пакета patrol (pytest)
+
+```bash
+cd src/patrol
+python3 -m pytest test
+```
+
+```
+test/test_command_logic.py ..                                            [ 11%]
+test/test_copyright.py s                                                 [ 16%]
+test/test_flake8.py .                                                    [ 22%]
+test/test_mypy.py .                                                      [ 27%]
+test/test_parameter_logic.py ...........                                 [ 88%]
+test/test_pep257.py .                                                    [ 94%]
+test/test_xmllint.py .                                                   [ 100%]
+
+======================== 17 passed, 1 skipped in 9.52s =========================
+```
+
+`test_parameter_logic.py` — чистая функция `validate_parameters`:
+
+- `test_frequency_change_to_5_accepted` — обычное изменение 10 → 5 Гц принято;
+- `test_zero_frequency_rejected` — 0 отклонено (причина указывает `publish_hz`);
+- `test_negative_frequency_rejected` — отрицательная частота отклонена;
+- `test_frequency_above_limit_rejected` — 31 Гц отклонено;
+- `test_nan_frequency_rejected` — NaN отклонён («finite number»);
+- `test_infinity_speed_rejected` — бесконечность отклонена;
+- `test_speed_above_limit_rejected` / `test_speed_negative_rejected` —
+  скорость вне [0, 1] м/с отклонена;
+- `test_turn_below_limit_rejected` — поворот вне [−1, 1] рад/с отклонён;
+- `test_boundary_values_accepted` — границы 1/30 Гц, 0/1 м/с, −1/1 рад/с
+  приняты;
+- `test_default_set_accepted` — значения по умолчанию приняты.
+
+`test_command_logic.py` — команда: без позы → ноль, с позой →
+`linear.x = 0.5`, `angular.z = 0.3` (теперь с параметризуемыми
+скоростями). `test_copyright` — skipped (нарушений нет). Lint: flake8,
+mypy, pep257, xmllint — passed.
+
+## 2. Тесты всего workspace (colcon)
+
+```bash
+colcon build --symlink-install
+colcon test --event-handlers console_direct+
+colcon test-result --verbose
+```
+
+```
+Finished <<< turtle_bringup [12.9s]
+Finished <<< patrol [13.0s]
+
+Summary: 2 packages finished [13.2s]
+Summary: 23 tests, 0 errors, 0 failures, 2 skipped
+```
+
+В CI (`.github/workflows/ci.yml`) выполняется тот же цикл.

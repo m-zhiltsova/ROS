@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "practice_id": "PR04",
+  "commit": "8777058bd00aae30925f4379b735fae24c58070e",
+  "student": "Zhiltsova Marina",
+  "environment": "distrobox (Arch Linux), контейнер ros2-lyrical: ROS 2 Lyrical, ROS_DOMAIN_ID=16",
+  "course_kit": {
+    "version": "v1-w10",
+    "archive_sha256": "7a91d388d7bd3def7e058c8da48c32ff27ea6f14dc880a2da169c4102d456874"
+  },
+  "commands": [
+    "colcon build --symlink-install",
+    "source install/setup.bash",
+    "cd src/patrol && python3 -m pytest test",
+    "colcon test --event-handlers console_direct+",
+    "colcon test-result --verbose",
+    "ros2 launch turtle_bringup sim.launch.py",
+    "ros2 run patrol patrol --ros-args -r cmd_vel:=/turtle1/cmd_vel",
+    "ros2 param get /patrol publish_hz",
+    "timeout 4 ros2 topic hz /turtle1/cmd_vel",
+    "ros2 param set /patrol publish_hz 5.0",
+    "ros2 param set /patrol linear_speed 0.7",
+    "ros2 param set /patrol publish_hz 0.0",
+    "ros2 param set /patrol publish_hz -5.0",
+    "ros2 param set /patrol linear_speed 2.0",
+    "ros2 param set /patrol turn_rate -1.5",
+    "ros2 service call /clear std_srvs/srv/Empty",
+    "ros2 action list -t",
+    "python3 .course-kit/v1/tools/check_practice.py PR04 --submission ."
+  ],
+  "tests": [
+    {
+      "name": "validation_pure_function",
+      "description": "validate_parameters: 10→5 Гц принято; 0, отрицательная, >30 Гц, NaN, infinity отклонены; скорости/поворот вне диапазона отклонены; границы приняты",
+      "status": "passed"
+    },
+    {
+      "name": "colcon_test_workspace",
+      "description": "colcon test по workspace: 23 tests, 0 errors, 0 failures, 2 skipped",
+      "status": "passed"
+    },
+    {
+      "name": "timer_rebuild_on_hz_change",
+      "description": "ros2 param set /patrol publish_hz 5.0: поток 10 → 5 Гц (период 0.2 с), старого таймера нет (не 15 Гц)",
+      "status": "passed"
+    },
+    {
+      "name": "speed_change_without_timer",
+      "description": "linear_speed 0.7: скорость в позе 0.7 м/с, период потока не изменился (5 Гц)",
+      "status": "passed"
+    },
+    {
+      "name": "invalid_values_rejected",
+      "description": "0.0, -5.0 Гц, 2.0 м/с, -1.5 рад/с отклонены с причиной; значение и поток сохранены",
+      "status": "passed"
+    },
+    {
+      "name": "defect_reproduction",
+      "description": "Ветка pr04-no-validation (0a17a169, on-set отключен): set publish_hz 0.0 — ZeroDivisionError в post-set, нода завершилась (exit 1), запрос завис, поток остановился",
+      "status": "passed"
+    },
+    {
+      "name": "defect_fix",
+      "description": "На main та же команда: 'Setting parameter failed: publish_hz must be within [1, 30] Hz, got 0.0', значение 10.0 сохранено, нода жива, поток 10 Гц",
+      "status": "passed"
+    },
+    {
+      "name": "service_and_action",
+      "description": "ros2 service call /clear std_srvs/srv/Empty — пустой ответ (успех); ros2 action list -t — /turtle1/rotate_absolute [turtlesim_msgs/action/RotateAbsolute]",
+      "status": "passed"
+    }
+  ],
+  "defect": {
+    "reproducer": "На ветке pr04-no-validation (коммит 0a17a169f7e2b467de8d6d6d1701a17bbe466c89, on-set-проверка частоты закомментирована) при работающей ноде выполнить ros2 param set /patrol publish_hz 0.0. Запрос не завершается (клиент висит без ответа); в логе ноды ZeroDivisionError: division by zero в post-set callback (период 1.0 / publish_hz = 1.0 / 0.0), процесс завершается с кодом 1. Нода исчезает из графа, поток /turtle1/cmd_vel останавливается.",
+    "root_cause": "Без on-set-проверки недопустимое значение 0 проходит в post-set callback, где период таймера вычисляется как 1.0 / publish_hz — деление на ноль. К моменту post-set значение параметра уже обновлено, а исключение распространяется через executor, поэтому вместо сохранения прежнего таймера нода падает целиком: активное состояние (таймер, публикация) разрушается необратимо.",
+    "proof_after": "После восстановления проверки (ветка main) тот же тест: ros2 param set /patrol publish_hz 0.0 мгновенно отклоняется с причиной 'publish_hz must be within [1, 30] Hz, got 0.0'; ros2 param get /patrol publish_hz возвращает прежнее значение (10.0), нода /patrol жива в графе, ros2 topic hz /turtle1/cmd_vel показывает поток 10.000 Гц (период 0.100 с)."
+  },
+  "claims": {
+    "public_tests_passed": true,
+    "defect_reproduced": true,
+    "defect_fixed": true
+  },
+  "time": {
+    "contact_academic_hours": 2,
+    "self_study_hours": 2
+  },
+  "ai_used": true
+}
