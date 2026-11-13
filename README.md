@@ -77,10 +77,40 @@ ros2 topic hz /turtle1/cmd_vel
 После остановки ноды `Ctrl+C` дождитесь остановки turtlesim: исчезновение
 процесса издателя — не команда торможения.
 
+## ПР04. Параметризуем движение
+
+Параметры ноды `patrol` (объявляются в `__init__`, значения по умолчанию):
+`publish_hz = 10.0` Гц, `linear_speed = 0.5` м/с, `turn_rate = 0.3` рад/с.
+Допустимые конечные значения: частота 1–30 Гц, скорость 0–1 м/с,
+поворот −1–1 рад/с.
+
+- on-set callback проверяет весь предлагаемый набор **до** изменения
+  состояния; недопустимое значение отклоняется с причиной;
+- post-set callback применяет принятый набор: при смене `publish_hz`
+  старый таймер останавливается (`cancel` + `destroy_timer`) и создаётся
+  новый с периодом `1/publish_hz`; смена скоростей таймер не трогает.
+
+```bash
+# Запуск (см. ПР03): ros2 run patrol patrol --ros-args -r cmd_vel:=/turtle1/cmd_vel
+
+# Изменить частоту команд 10 -> 5 Гц (старый таймер заменён)
+ros2 param set /patrol publish_hz 5.0
+ros2 topic hz /turtle1/cmd_vel          # ~5 Гц, период 0.2 с
+
+# Недопустимые значения отклоняются, текущее значение и поток сохраняются
+ros2 param set /patrol publish_hz 0.0   # rejected: publish_hz must be within [1, 30] Hz
+ros2 param set /patrol linear_speed 2.0
+ros2 param set /patrol turn_rate -1.5
+
+# Готовые сервис и action turtlesim
+ros2 service call /clear std_srvs/srv/Empty
+ros2 action list -t                     # /turtle1/rotate_absolute
+```
+
 ### CI
 
 `.github/workflows/ci.yml`: полная сборка `colcon build --symlink-install`,
-`colcon test` + `colcon test-result` и `check_practice.py PR03 --submission .`
+`colcon test` + `colcon test-result` и `check_practice.py PR04 --submission .`
 с зафиксированным course-kit `v1-w10`.
 
 ИИ использовался для генерации скриптов автоматизации сбора данных и настройки окружения distrobox.
