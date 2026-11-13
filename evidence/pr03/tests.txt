@@ -1,0 +1,59 @@
+# ПР03. Результаты тестов
+
+Среда: контейнер `ros2-lyrical` (ROS 2 Lyrical), из корня workspace
+после `source /opt/ros/lyrical/setup.bash && source install/setup.bash`.
+
+## 1. Тесты пакета patrol (pytest)
+
+```bash
+cd src/patrol
+python3 -m pytest test
+```
+
+```
+collected 7 items
+
+test/test_command_logic.py ..                                            [ 28%]
+test/test_copyright.py s                                                 [ 42%]
+test/test_flake8.py .                                                    [ 57%]
+test/test_mypy.py .                                                      [ 71%]
+test/test_pep257.py .                                                    [ 85%]
+test/test_xmllint.py .                                                   [ 100%]
+
+========================= 6 passed, 1 skipped in 6.83s =========================
+```
+
+- `test_command_logic.py` — чистая функция `compute_command`:
+  - `test_no_pose` — поза отсутствует → нулевая команда (`0.0 / 0.0`);
+  - `test_with_pose` — поза получена → `linear.x = 0.5`, `angular.z = 0.3`.
+- `test_copyright` — skipped (ament_copyright не находит нарушений в
+  проверяемых файлах пакета).
+- flake8, mypy, pep257, xmllint — passed.
+
+Примечание: запуск того же `python3 -m pytest src/patrol/test` из корня
+workspace подтягивает в mypy артефакты `build/` (копии `setup.py` от
+colcon) и даёт ошибку `Duplicate module named "setup"` — это артефакт
+сканирования ament_mypy 0.20.6 из корня, а не ошибка кода. Из каталога
+пакета (как выше) и через `colcon test` (ниже) проверки проходят.
+
+## 2. Тесты всего workspace (colcon)
+
+```bash
+colcon build --symlink-install
+colcon test --event-handlers console_direct+
+colcon test-result --verbose
+```
+
+```
+Finished <<< patrol [13.8s]
+Finished <<< turtle_bringup [14.0s]
+
+Summary: 2 packages finished [14.1s]
+Summary: 12 tests, 0 errors, 0 failures, 2 skipped
+```
+
+- patrol: 6 passed, 1 skipped;
+- turtle_bringup: 4 passed, 1 skipped (flake8, mypy, pep257, xmllint).
+
+В CI (`.github/workflows/ci.yml`) выполняется тот же цикл:
+`colcon build --symlink-install`, `colcon test`, `colcon test-result --verbose`.
