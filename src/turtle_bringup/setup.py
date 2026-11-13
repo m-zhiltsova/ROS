@@ -18,7 +18,7 @@ setup(
     zip_safe=True,
     maintainer='Marina',
     maintainer_email='m.zhiltsova@g.nsu.ru',
-    description='TODO: Package description',
+    description='Launch description for the turtlesim simulation used in the robotics course practices.',
     license='Apache-2.0',
     extras_require={
         'test': [

@@ -4,3 +4,5 @@ log/
 .course-kit/
 __pycache__/
 *.pyc
+robotics-course-kit-*.tar.gz
+robotics-course-kit-*.sha256.txt
