@@ -1,5 +1,6 @@
-from setuptools import find_packages, setup
 from glob import glob
+
+from setuptools import find_packages, setup
 
 package_name = 'turtle_bringup'
 
@@ -18,7 +19,7 @@ setup(
     zip_safe=True,
     maintainer='Marina',
     maintainer_email='m.zhiltsova@g.nsu.ru',
-    description='Launch description for the turtlesim simulation used in the robotics course practices.',
+    description='Launch description for the turtlesim simulation (course practice).',
     license='Apache-2.0',
     extras_require={
         'test': [

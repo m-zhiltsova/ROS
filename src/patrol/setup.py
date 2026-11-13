@@ -16,8 +16,8 @@ setup(
     zip_safe=True,
     maintainer='Marina',
     maintainer_email='m.zhiltsova@g.nsu.ru',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='Patrol node: pose subscription and Twist velocity commands.',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',
