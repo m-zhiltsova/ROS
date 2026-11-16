@@ -27,3 +27,9 @@
 команда из инструкции `python3 -m pytest src/patrol/test` проходила и из
 корня workspace; проверено pytest из корня и из пакета, `colcon test`
 (23 tests, 0 failures) и полный живой прогон параметров в контейнере.
+
+## PR05
+
+| Модель | Инструмент / среда | Компонент | Характер помощи | Как проверено |
+|---|---|---|---|---|
+| Qwen3.8-27B | opencode (CLI-агент) | `src/course_bringup` (launch `patrol.launch.py`, нода `pose_relay`, `qos_config.py`, тесты), `config/qos-overrides.yaml`, `setup.cfg`, `.gitignore`, workflow `ci.yml`, `README.md`, `evidence/pr05/` | Разбор условия ПР05 и лекции 05, реализация launch с аргументами/namespace/remaps/IfCondition-recorder, нода relay с best-effort-издателем и настраиваемым probe-подписчиком, выполнение опыта в контейнере `ros2-lyrical` (дефект reliable-подписчика, исправление, запись MCAP, replay с override, проверка record:=true), написание `qos-before.txt`, `qos-after.txt`, `tests.txt`, `report.json` | `colcon test` по workspace (32 tests, 0 failures) и `pytest` (8 passed); повтор всех команд `ros2 launch/echo/bag` в контейнере с фиксацией фактических выводов и кодов возврата; локальный прогон `check_practice.py PR05 --submission .` |

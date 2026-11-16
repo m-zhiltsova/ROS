@@ -1,0 +1,69 @@
+# ПР05. Результаты тестов
+
+Среда: контейнер `ros2-lyrical` (ROS 2 Lyrical), из корня workspace
+после `source /opt/ros/lyrical/setup.bash && source install/setup.bash`.
+
+## 1. Тесты пакета course_bringup (pytest)
+
+```bash
+cd src/course_bringup
+python3 -m pytest test
+```
+
+```
+test/test_copyright.py s                                                 [ 11%]
+test/test_flake8.py .                                                    [ 22%]
+test/test_mypy.py .                                                      [ 33%]
+test/test_pep257.py .                                                    [ 44%]
+test/test_qos_config.py ....                                             [ 88%]
+test/test_xmllint.py .                                                   [ 100%]
+
+========================= 8 passed, 1 skipped in 9.71s =========================
+```
+
+`test_qos_config.py` — чистая функция `reliability_policy` и профиль
+издателя:
+
+- `test_reliable_maps_to_reliable_policy` — `reliable` →
+  `QoSReliabilityPolicy.RELIABLE`;
+- `test_best_effort_maps_to_best_effort_policy` — `best_effort` →
+  `QoSReliabilityPolicy.BEST_EFFORT`;
+- `test_unknown_reliability_rejected` — любое другое значение → ValueError;
+- `test_sensor_publisher_profile_is_best_effort` — профиль `sensor_pose`:
+  best effort, keep_last, depth 10.
+
+`test_copyright` — skipped (шаблон пакета без заголовков в сгенерированных
+файлах). Lint: flake8, mypy, pep257, xmllint — passed.
+
+## 2. Та же команда из корня workspace
+
+```bash
+python3 -m pytest src/course_bringup/test
+```
+
+```
+========================= 8 passed, 1 skipped =========================
+```
+
+mypy ограничен каталогом собственного пакета (тот же приём, что в ПР04),
+поэтому запуск из корня не подбирает чужие `setup.py`/файлы workspace.
+
+## 3. Тесты всего workspace (colcon)
+
+```bash
+colcon build --symlink-install
+colcon test --event-handlers console_direct+
+colcon test-result
+```
+
+```
+Summary: 3 packages finished [5.62s]
+Finished <<< course_bringup [12.3s]
+
+Summary: 3 packages finished [28.0s]
+Summary: 32 tests, 0 errors, 0 failures, 3 skipped
+```
+
+32 теста = patrol (18) + turtle_bringup (5) + course_bringup (9), включая
+4 новых теста QoS-логики. В CI (`.github/workflows/ci.yml`) выполняется
+тот же цикл и `check_practice.py PR05`.

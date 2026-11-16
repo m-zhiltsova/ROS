@@ -1,0 +1,201 @@
+# ПР05. QoS после исправления: совместимый профиль, живой поток и повтор записи
+
+Среда: distrobox, контейнер `ros2-lyrical` (ROS 2 Lyrical), `ROS_DOMAIN_ID=16`.
+Одна и та же запись (bag) и тот же тип топика до и после; меняется только
+требование читателя (reliability).
+
+## 1. Перезапуск launch с best_effort-подписчиком
+
+```bash
+ros2 launch course_bringup patrol.launch.py \
+  namespace:=robot_a subscriber_reliability:=best_effort record:=false
+```
+
+```
+[INFO] [launch.user]: System in /robot_a (probe: best_effort, record: false)
+```
+
+```bash
+ros2 node list --no-daemon --spin-time 2
+```
+
+```
+/robot_a/patrol
+/robot_a/pose_relay
+/turtlesim
+```
+
+## 2. Совместимый профиль на живом потоке
+
+```bash
+timeout 3s ros2 topic echo /robot_a/sensor_pose \
+  --qos-reliability best_effort --once
+```
+
+```
+x: 3.8962454795837402
+y: 7.48385763168335
+theta: -1.7375853061676025
+linear_velocity: 0.5
+angular_velocity: 0.30000001192092896
+---
+```
+
+Сообщение получено, код возврата 0. Delivery восстановлен: запрос
+`best effort` удовлетворяет предложению издателя `best effort`.
+
+Внутренний probe-подписчик (теперь best_effort) считает доставки:
+
+```
+[pose_relay-3] [INFO] [1794838998.857521017] [robot_a.pose_relay]: sensor_pose probe: 1500 messages delivered
+[pose_relay-3] [INFO] [1794838999.857635179] [robot_a.pose_relay]: sensor_pose probe: 1562 messages delivered
+[pose_relay-3] [INFO] [1794839000.857709405] [robot_a.pose_relay]: sensor_pose probe: 1625 messages delivered
+```
+
+## 3. Запись одного исправленного потока в MCAP
+
+Пока живой launch работает, записываем поток:
+
+```bash
+ros2 bag record -s mcap -o evidence/pr05/bag \
+  --topics /robot_a/sensor_pose
+# остановка recorder'а через Ctrl+C (SIGINT)
+```
+
+```
+[INFO] [rosbag2_recorder]: Recording...
+[INFO] [rosbag2_recorder]: Subscribed to topic '/robot_a/sensor_pose'
+[INFO] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+...
+[INFO] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[INFO] [rosbag2_recorder]: Recording stopped
+```
+
+## 4. Остановка живого издателя перед повтором
+
+Перед каждым чтением записи живой издатель остановлен (launch завершён,
+нод нет в графе), поэтому при replay источником сообщений служит только
+запись. Так «до» и «после» сравниваются на одной и той же записи.
+
+## 5. Повтор записи с тем же QoS-профилем (override)
+
+```bash
+ros2 bag play evidence/pr05/bag \
+  --qos-profile-overrides-path config/qos-overrides.yaml
+```
+
+`config/qos-overrides.yaml`:
+
+```yaml
+/robot_a/sensor_pose:
+  reliability: best_effort
+  history: keep_last
+  depth: 10
+```
+
+Повторяем оба чтения поверх replay:
+
+До (reliable-запрос к best-effort-издателю записи — несовместимо):
+
+```bash
+timeout 3s ros2 topic echo /robot_a/sensor_pose \
+  --qos-reliability reliable --once
+```
+
+```
+[WARN] [1794839161.567091405] [_ros2cli_45921]: New publisher discovered on topic '/robot_a/sensor_pose', offering incompatible QoS. No messages will be received from it. Last incompatible policy: RELIABILITY
+!rclpy.ok()
+```
+
+Сообщений нет, код возврата 124 (timeout) — как и на живом потоке до правки.
+
+После (best_effort-запрос — совместимо):
+
+```bash
+timeout 3s ros2 topic echo /robot_a/sensor_pose \
+  --qos-reliability best_effort --once
+```
+
+```
+x: 7.195369243621826
+y: 7.013603687286377
+theta: 1.4496146440505981
+linear_velocity: 0.5
+angular_velocity: 0.30000001192092896
+---
+```
+
+Сообщение получено, код возврата 0. Тот же профиль, что на живом потоке,
+проверен и на повторе записи.
+
+## 6. Состав записи
+
+```bash
+ros2 bag info evidence/pr05/bag
+```
+
+```
+Files:             0_bag_2026_11_16-21_23_10.mcap
+Bag size:          50.0 KiB
+Storage id:        mcap
+ROS Distro:        lyrical
+Duration:          10.431971667s
+Start:             Nov 16 2026 21:23:11.061702383 (1794838991.061702383)
+End:               Nov 16 2026 21:23:21.493674050 (1794839001.493674050)
+Messages:          653
+Topic information: Topic: /robot_a/sensor_pose | Type: turtlesim_msgs/msg/Pose | Count: 653 | Serialization Format: cdr
+Services:          0
+Service information:
+Actions:           0
+Action information:
+```
+
+Запись содержит ровно один поток — `/robot_a/sensor_pose`.
+
+```bash
+cp evidence/pr05/bag/metadata.yaml evidence/pr05/bag-metadata.yaml
+```
+
+`bag-metadata.yaml` скопирован из каталога MCAP.
+
+## 7. Запись из launch (IfCondition record:=true)
+
+Опциональный recorder запускается только при `record:=true`:
+
+```bash
+ros2 launch course_bringup patrol.launch.py \
+  namespace:=robot_a subscriber_reliability:=best_effort record:=true \
+  bag_dir:=/tmp/pr05_launch_bag
+```
+
+```
+[INFO] [launch.user]: System in /robot_a (probe: best_effort, record: true)
+[ros2-4] [INFO] [1794839286.437924599] [rosbag2_recorder]: Recording...
+[ros2-4] [INFO] [1794839286.867705181] [rosbag2_recorder]: Subscribed to topic '/robot_a/sensor_pose'
+```
+
+```bash
+ros2 node list --no-daemon --spin-time 2
+```
+
+```
+/robot_a/patrol
+/robot_a/pose_relay
+/rosbag2_recorder
+/turtlesim
+```
+
+После остановки launch запись завершена:
+
+```bash
+ros2 bag info /tmp/pr05_launch_bag
+```
+
+```
+Duration:          23.311627818s
+Messages:          1458
+Topic information: Topic: /robot_a/sensor_pose | Type: turtlesim_msgs/msg/Pose | Count: 1458 | Serialization Format: cdr
+```
+
+При `record:=false` (разделы 1–6) ноды `/rosbag2_recorder` в графе нет —
+условие `IfCondition` не запускает recorder.

@@ -1,0 +1,99 @@
+# ПР05. QoS до исправления: reliable-подписчик против best-effort-сенсора
+
+Среда: distrobox, контейнер `ros2-lyrical` (ROS 2 Lyrical), `ROS_DOMAIN_ID=16`.
+
+## 1. Запуск системы в /robot_a (подписчик просит reliable)
+
+```bash
+ros2 launch course_bringup patrol.launch.py \
+  namespace:=robot_a subscriber_reliability:=reliable record:=false
+```
+
+```
+[INFO] [launch.user]: System in /robot_a (probe: reliable, record: false)
+```
+
+Полные имена после запуска (namespace наследуется относительными именами,
+глобальный turtlesim остаётся от корня графа):
+
+```bash
+ros2 node list --no-daemon --spin-time 2
+```
+
+```
+/robot_a/patrol
+/robot_a/pose_relay
+/turtlesim
+```
+
+```bash
+ros2 topic list
+```
+
+```
+/parameter_events
+/robot_a/sensor_pose
+/rosout
+/turtle1/cmd_vel
+/turtle1/color_sensor
+/turtle1/pose
+```
+
+Топик `/robot_a/sensor_pose` **виден** в списке.
+
+## 2. Профили конечных точек
+
+```bash
+ros2 topic info /robot_a/sensor_pose --verbose
+```
+
+```
+Type: turtlesim_msgs/msg/Pose
+
+Publisher count: 1
+Endpoint type: PUBLISHER
+QoS profile:
+  Reliability: BEST_EFFORT
+  History (Depth): KEEP_LAST (10)
+  Durability: VOLATILE
+
+Subscription count: 1
+Endpoint type: SUBSCRIPTION
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): KEEP_LAST (10)
+  Durability: VOLATILE
+```
+
+Издатель (`pose_relay`) предлагает `best effort`, внутренний probe-подписчик
+запрашивает `reliable` — несовместимая пара: reliable-запрос не может быть
+обслужен best-effort-издателем.
+
+## 3. Сообщения не доставляются (ожидаемый timeout)
+
+```bash
+timeout 3s ros2 topic echo /robot_a/sensor_pose \
+  --qos-reliability reliable --once
+```
+
+```
+[WARN] [1794838909.223758405] [_ros2cli_44486]: New publisher discovered on topic '/robot_a/sensor_pose', offering incompatible QoS. No messages will be received from it. Last incompatible policy: RELIABILITY
+!rclpy.ok()
+```
+
+3 секунды ожидания, сообщений нет; код возврата 124 (timeout).
+
+## 4. Тот же вывод внутри системы (probe-подписчик с reliable)
+
+Лог ноды `pose_relay` (каждую секунду):
+
+```
+[pose_relay-3] [INFO] [1794838894.054807775] [robot_a.pose_relay]: sensor_pose probe: 0 messages delivered
+[pose_relay-3] [INFO] [1794838895.054614978] [robot_a.pose_relay]: sensor_pose probe: 0 messages delivered
+...
+[pose_relay-3] [INFO] [1794838922.054764190] [robot_a.pose_relay]: sensor_pose probe: 0 messages delivered
+```
+
+Симптом зафиксирован: топик есть в графе, сообщений нет ни у CLI-подписчика,
+ни у внутреннего reliable-подписчика. Первопричина — несовместимость
+reliability между конечными точками (топик «виден», доставка отключена).
