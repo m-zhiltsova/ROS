@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 from ament_mypy.main import main
 import pytest
 
@@ -19,5 +21,7 @@ import pytest
 @pytest.mark.mypy
 @pytest.mark.linter
 def test_mypy() -> None:
-    rc = main(argv=[])
+    """Check types in this package only, independent of pytest cwd."""
+    package_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    rc = main(argv=[package_dir])
     assert rc == 0, 'Found type errors!'
