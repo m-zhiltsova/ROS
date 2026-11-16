@@ -107,10 +107,46 @@ ros2 service call /clear std_srvs/srv/Empty
 ros2 action list -t                     # /turtle1/rotate_absolute
 ```
 
+## ПР05. Launch, QoS и повтор записи
+
+Пакет `course_bringup`: launch-файл `patrol.launch.py` поднимает всю систему
+одной командой в пространстве имён `namespace` (по умолчанию `/robot_a`):
+глобальный `turtlesim`, нода `patrol` (выход `cmd_vel` переназначен в
+`/turtle1/cmd_vel`) и нода `pose_relay`.
+
+`pose_relay` читает `/turtle1/pose` и публикует `sensor_pose`
+(`turtlesim_msgs/msg/Pose`) с профилем **best effort**, keep_last, depth 10.
+Отдельный probe-подписчик той же темы использует настраиваемое
+`subscriber_reliability` (`reliable` | `best_effort`), значение валидируется
+on-set callback'ом, при смене подписчик пересоздаётся.
+
+```bash
+# До: reliable-подписчик против best-effort-сенсора — топик виден, сообщений нет
+ros2 launch course_bringup patrol.launch.py \
+  namespace:=robot_a subscriber_reliability:=reliable record:=false
+timeout 3s ros2 topic echo /robot_a/sensor_pose \
+  --qos-reliability reliable --once     # timeout, exit 124
+
+# После: совместимый профиль
+ros2 launch course_bringup patrol.launch.py \
+  namespace:=robot_a subscriber_reliability:=best_effort record:=false
+timeout 3s ros2 topic echo /robot_a/sensor_pose \
+  --qos-reliability best_effort --once  # сообщение, exit 0
+
+# Запись исправленного потока и повтор с тем же профилем
+ros2 bag record -s mcap -o evidence/pr05/bag --topics /robot_a/sensor_pose
+ros2 bag play evidence/pr05/bag \
+  --qos-profile-overrides-path config/qos-overrides.yaml
+ros2 bag info evidence/pr05/bag
+```
+
+`record:=true` (через `IfCondition`) добавляет в систему `ros2 bag record`
+в каталог `bag_dir`; при `false` recorder не запускается.
+
 ### CI
 
 `.github/workflows/ci.yml`: полная сборка `colcon build --symlink-install`,
-`colcon test` + `colcon test-result` и `check_practice.py PR04 --submission .`
+`colcon test` + `colcon test-result` и `check_practice.py PR05 --submission .`
 с зафиксированным course-kit `v1-w10`.
 
 ИИ использовался для генерации скриптов автоматизации сбора данных и настройки окружения distrobox.

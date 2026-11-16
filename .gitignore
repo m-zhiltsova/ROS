@@ -3,6 +3,8 @@ install/
 log/
 .course-kit/
 __pycache__/
+.pytest_cache/
 *.pyc
+evidence/pr05/bag/
 robotics-course-kit-*.tar.gz
 robotics-course-kit-*.sha256.txt
