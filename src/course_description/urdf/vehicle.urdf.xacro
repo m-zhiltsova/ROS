@@ -124,7 +124,7 @@
 
   <xacro:sensor name="lidar_link"/>
   <joint name="lidar_joint" type="fixed">
-    <parent link="base_link"/>
+    <parent link="camera_link"/>
     <child link="lidar_link"/>
     <origin xyz="${sensor_offset_x} 0 ${sensor_offset_z}" rpy="0 0 0"/>
   </joint>
