@@ -1,9 +1,9 @@
 # ПР02. Команды и наблюдения
 
 Среда: distrobox, контейнер `ros2-lyrical` (образ `osrf/ros`, ROS 2 Lyrical,
-Ubuntu), `/home/lila` на хосте смонтирован в контейнере как `/work`.
+Ubuntu), `~` на хосте смонтирован в контейнере как `/work`.
 Корень workspace = корень репозитория: `/work/ros_labs/ROS`
-(`/home/lila/ros_labs/ROS` на хосте). Домен: `ROS_DOMAIN_ID=16`.
+(`~/ros_labs/ROS` на хосте). Домен: `ROS_DOMAIN_ID=16`.
 
 Каждый терминал начинал с:
 
@@ -19,7 +19,7 @@ cd /work/ros_labs/ROS        # из корня workspace
 
 | Точная команда | Назначение | Мой результат |
 |---|---|---|
-| `pwd` | Показать каталог, в котором сейчас оболочка | `/work/ros_labs/ROS` — подтвердил, что работаю из корня workspace; на хосте тот же путь — `/home/lila/ros_labs/ROS` |
+| `pwd` | Показать каталог, в котором сейчас оболочка | `/work/ros_labs/ROS` — подтвердил, что работаю из корня workspace; на хосте тот же путь — `~/ros_labs/ROS` |
 | `mkdir -p evidence/pr02` | Создать каталог для результатов, включая вложенные; не ошибиться, если каталог уже есть | код возврата 0, каталог `evidence/pr02/` существует, сюда сохраняются `build*.txt`, `commands.md`, `types.md`, `report.json` |
 | `cat evidence/pr02/build.txt` | Прочитать содержимое файла целиком | `Starting >>> turtle_bringup` / `Finished <<< turtle_bringup [1.98s]` / `Summary: 1 package finished [2.10s]` |
 
