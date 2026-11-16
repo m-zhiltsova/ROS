@@ -143,10 +143,43 @@ ros2 bag info evidence/pr05/bag
 `record:=true` (через `IfCondition`) добавляет в систему `ros2 bag record`
 в каталог `bag_dir`; при `false` recorder не запускается.
 
+## ПР06. Описание робота: Xacro, robot_state_publisher, tf
+
+Пакет `course_description`: Xacro-описание Ackermann-робота
+(`urdf/vehicle.urdf.xacro`, размеры из
+`.course-kit/v1/models/course_ackermann/model.sdf`) и launch, запускающий
+`robot_state_publisher`.
+
+Дерево: `base_link` → камера, лидар и IMU (fixed, все в `(0.28, 0, 0.38)`) и
+четыре колеса (continuous, из `wheelbase = 0.8`, `track = 0.62`,
+`wheel_radius = 0.12` — Xacro-переменные, не магические числа). У каждого
+звена отдельно visual и collision; inertial — по формулам для
+параллелепипеда и цилиндра.
+
+```bash
+# Разворот и проверка структуры
+xacro src/course_description/urdf/vehicle.urdf.xacro > /tmp/vehicle.urdf
+check_urdf /tmp/vehicle.urdf
+
+# Запуск и преобразования
+ros2 launch course_description vehicle.launch.py
+ros2 run tf2_ros tf2_echo base_link lidar_link   # [0.280, 0.000, 0.380]
+ros2 run tf2_tools view_frames                   # frames_*.pdf
+```
+
+`/tf_static` у `robot_state_publisher` — reliable + transient local
+(depth 1): поздний подписчик с transient local получает связи сразу,
+volatile-подписчик — нет (проверено в `evidence/pr06/tf-qos.txt`).
+Системы координат колёс появляются в tf только при публикациях
+`joint_states`.
+
+Структуру дерева (родители, типы сочленений, связность, физичность
+инерций) проверяет тест `test_frames.py`.
+
 ### CI
 
 `.github/workflows/ci.yml`: полная сборка `colcon build --symlink-install`,
-`colcon test` + `colcon test-result` и `check_practice.py PR05 --submission .`
+`colcon test` + `colcon test-result` и `check_practice.py PR06 --submission .`
 с зафиксированным course-kit `v1-w10`.
 
 ИИ использовался для генерации скриптов автоматизации сбора данных и настройки окружения distrobox.

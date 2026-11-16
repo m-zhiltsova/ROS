@@ -45,4 +45,4 @@ jobs:
 
       - name: Check PR evidence
         shell: bash
-        run: python3 .course-kit/v1/tools/check_practice.py PR05 --submission .
+        run: python3 .course-kit/v1/tools/check_practice.py PR06 --submission .
