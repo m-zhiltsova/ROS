@@ -33,3 +33,9 @@
 | Модель | Инструмент / среда | Компонент | Характер помощи | Как проверено |
 |---|---|---|---|---|
 | Qwen3.8-27B | opencode (CLI-агент) | `src/course_bringup` (launch `patrol.launch.py`, нода `pose_relay`, `qos_config.py`, тесты), `config/qos-overrides.yaml`, `setup.cfg`, `.gitignore`, workflow `ci.yml`, `README.md`, `evidence/pr05/` | Разбор условия ПР05 и лекции 05, реализация launch с аргументами/namespace/remaps/IfCondition-recorder, нода relay с best-effort-издателем и настраиваемым probe-подписчиком, выполнение опыта в контейнере `ros2-lyrical` (дефект reliable-подписчика, исправление, запись MCAP, replay с override, проверка record:=true), написание `qos-before.txt`, `qos-after.txt`, `tests.txt`, `report.json` | `colcon test` по workspace (32 tests, 0 failures) и `pytest` (8 passed); повтор всех команд `ros2 launch/echo/bag` в контейнере с фиксацией фактических выводов и кодов возврата; локальный прогон `check_practice.py PR05 --submission .` |
+
+## PR06
+
+| Модель | Инструмент / среда | Компонент | Характер помощи | Как проверено |
+|---|---|---|---|---|
+| Qwen3.8-27B | opencode (CLI-агент) | `src/course_description` (xacro-модель, launch, `test_frames.py`), workflow `ci.yml`, `README.md`, `evidence/pr06/` | Разбор условия ПР06 и лекции 06, Xacro-описание Ackermann-робота по размерам course-kit SDF (макросы колеса/сенсора, параметризация, инерции по формулам), launch `robot_state_publisher`, структурный тест дерева (родители, связность, физичность инерций), опыт в контейнере `ros2-lyrical` (tf2_echo, QoS `/tf_static`, view_frames), дефект-ветка `pr06-lidar-parent` и её фиксация, написание `frames.md`, `model-check.txt`, `tf-qos.txt`, `tf2-echo.txt`, `defect-demo.txt`, `report.json` | `colcon test` по workspace (41 tests, 0 failures) и `pytest` (8 passed); повтор всех команд `xacro/check_urdf/ros2 launch/tf2_echo/topic echo` в контейнере с фиксацией фактических выводов; локальный прогон `check_practice.py PR06 --submission .` |

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "practice_id": "PR06",
+  "commit": "869a7b4b321f7995b7c7dd1e1ba92194845d9397",
+  "student": "Zhiltsova Marina",
+  "environment": "distrobox (Arch Linux), контейнер ros2-lyrical: ROS 2 Lyrical, ROS_DOMAIN_ID=16",
+  "course_kit": {
+    "version": "v1-w10",
+    "archive_sha256": "7a91d388d7bd3def7e058c8da48c32ff27ea6f14dc880a2da169c4102d456874"
+  },
+  "commands": [
+    "colcon build --symlink-install",
+    "source install/setup.bash",
+    "python3 -m pytest src/course_description/test",
+    "colcon test --event-handlers console_direct+",
+    "colcon test-result --verbose",
+    "xacro src/course_description/urdf/vehicle.urdf.xacro > /tmp/vehicle.urdf",
+    "check_urdf /tmp/vehicle.urdf",
+    "ros2 launch course_description vehicle.launch.py",
+    "ros2 run tf2_ros tf2_echo base_link lidar_link",
+    "ros2 run tf2_ros tf2_echo base_link camera_link",
+    "ros2 run tf2_ros tf2_echo base_link imu_link",
+    "ros2 run tf2_ros tf2_echo base_link front_left_wheel",
+    "ros2 run tf2_tools view_frames",
+    "ros2 topic info /tf_static --verbose",
+    "timeout 4 ros2 topic echo /tf_static --once --qos-durability transient_local --qos-reliability reliable",
+    "timeout 4 ros2 topic echo /tf_static --once --qos-durability volatile --qos-reliability reliable",
+    "python3 .course-kit/v1/tools/check_practice.py PR06 --submission ."
+  ],
+  "tests": [
+    {
+      "name": "frames_structure",
+      "description": "test_frames.py: fixed-сочленения камеры/лидара/IMU с parent base_link, 4 continuous-колёса, связность дерева от base_link, физичность масс и моментов инерции — 4 passed",
+      "status": "passed"
+    },
+    {
+      "name": "pytest_package_and_root",
+      "description": "python3 -m pytest src/course_description/test и из каталога пакета: 8 passed, 1 skipped; lint flake8/mypy/pep257/xmllint passed",
+      "status": "passed"
+    },
+    {
+      "name": "colcon_test_workspace",
+      "description": "colcon test по workspace: 41 tests, 0 errors, 0 failures, 4 skipped (4 пакета)",
+      "status": "passed"
+    },
+    {
+      "name": "check_urdf",
+      "description": "xacro-разворот + check_urdf: Successfully Parsed XML, корень base_link, 7 дочерних звеньев, без ошибок и предупреждений (model-check.txt)",
+      "status": "passed"
+    },
+    {
+      "name": "tf_static_qos",
+      "description": "/tf_static у robot_state_publisher: RELIABLE + TRANSIENT_LOCAL, depth 1; поздний transient_local-подписчик получает 3 связи (exit 0), volatile-подписчик — ничего (exit 124) — tf-qos.txt",
+      "status": "passed"
+    },
+    {
+      "name": "tf_transforms",
+      "description": "tf2_echo: base_link→lidar_link/camera_link/imu_link = [0.280, 0.000, 0.380], поворот единичный; колёсные фреймы отсутствуют без joint_states (tf2-echo.txt, view_frames.pdf)",
+      "status": "passed"
+    },
+    {
+      "name": "defect_reproduction_branch",
+      "description": "Ветка pr06-lidar-parent (d8e912b): parent lidar_joint = camera_link при том же offset. test_sensor_joints_are_fixed_to_base_link падает (1 failed, 3 passed); check_urdf модель принимает; tf2_echo base_link lidar_link = [0.560, 0.000, 0.760] вместо (0.28, 0, 0.38) — defect-demo.txt",
+      "status": "passed"
+    },
+    {
+      "name": "defect_fixed_main",
+      "description": "На main: test_frames.py 4 passed, tf2_echo base_link lidar_link = [0.280, 0.000, 0.380]",
+      "status": "passed"
+    }
+  ],
+  "defect": {
+    "reproducer": "В отдельной ветке pr06-lidar-parent (коммит d8e912b) в lidar_joint заменить parent с base_link на camera_link, сохранив прежний origin (0.28 0 0.38). Тогда: python3 -m pytest src/course_description/test/test_frames.py — тест test_sensor_joints_are_fixed_to_base_link падает; запустить ros2 launch course_description vehicle.launch.py и выполнить ros2 run tf2_ros tf2_echo base_link lidar_link — лидар оказывается в (0.56, 0, 0.76).",
+    "root_cause": "check_urdf проверяет структуру дерева (связность, типы сочленений), но не смысл: модель с лидаром, прикреплённым к camera_link, валидна как дерево. Ошибка родителя изменяет положение потомка — смещения складываются (0.28+0.28 по x, 0.38+0.38 по z), поэтому лидар смещён вдвое дальше и выше. Значения из описания проверяет тест, а не check_urdf.",
+    "proof_after": "На main lidar_joint снова parent = base_link: test_frames.py — 4 passed, tf2_echo base_link lidar_link даёт [0.280, 0.000, 0.380] с единичным поворотом; check_urdf без ошибок (model-check.txt)."
+  },
+  "claims": {
+    "public_tests_passed": true,
+    "defect_reproduced": true,
+    "defect_fixed": true
+  },
+  "time": {
+    "contact_academic_hours": 2,
+    "self_study_hours": 2
+  },
+  "ai_used": true
+}

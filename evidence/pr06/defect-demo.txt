@@ -1,0 +1,48 @@
+# ПР06. Дефект (ветка pr06-lidar-parent, коммит d8e912b): lidar_link прикреплён к camera_link
+
+Сделано: в lidar_joint заменено <parent link="base_link"/> на <parent link="camera_link"/>,
+origin (0.28 0 0.38) не изменён.
+
+## 1. Тест ожидаемого parent падает
+
+$ python3 -m pytest src/course_description/test/test_frames.py -q
+
+E   AssertionError: lidar_joint
+E   assert "camera_link" == "base_link"
+E     - base_link
+E     + camera_link
+
+FAILED src/course_description/test/test_frames.py::test_sensor_joints_are_fixed_to_base_link
+1 failed, 3 passed in 0.13s
+
+## 2. check_urdf такую модель принимает (структура связана, но смысл неверен)
+
+$ xacro src/course_description/urdf/vehicle.urdf.xacro > /tmp/vehicle_defect.urdf
+$ check_urdf /tmp/vehicle_defect.urdf
+
+robot name is: course_ackermann
+---------- Successfully Parsed XML ---------------
+root Link: base_link has 6 child(ren)
+    child(1):  camera_link
+        child(1):  lidar_link
+    child(2):  front_left_wheel
+    child(3):  front_right_wheel
+    child(4):  imu_link
+    child(5):  rear_left_wheel
+    child(6):  rear_right_wheel
+
+## 3. Положение лидара неверно: (0.56, 0, 0.76) вместо (0.28, 0, 0.38)
+
+$ ros2 run tf2_ros tf2_echo base_link lidar_link
+
+At time 0.0
+- Translation: [0.560, 0.000, 0.760]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 0.000, 1.000]
+- Matrix:
+  1.000  0.000  0.000  0.560
+  0.000  1.000  0.000  0.000
+  0.000  0.000  1.000  0.760
+  0.000  0.000  0.000  1.000
+
+Смещение суммируется: 0.28 + 0.28 = 0.56 (x), 0.38 + 0.38 = 0.76 (z).
+check_urdf проверяет структуру, а не смысл — числа ловит тест.
