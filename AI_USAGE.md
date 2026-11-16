@@ -21,3 +21,9 @@
 | Модель | Инструмент / среда | Компонент | Характер помощи | Как проверено |
 |---|---|---|---|---|
 | Qwen3.8-27B | opencode (CLI-агент) | `src/patrol` (параметры, on/post-set callbacks, `validate_parameters` в `command_logic.py`, `test_parameter_logic.py`), workflow `ci.yml`, `README.md`, `evidence/pr04/`, побочная ветка `pr04-no-validation` | Разбор условия ПР04 и лекции 04, реализация параметров и пересоздания таймера, чистые тесты валидации, дефектный коммит на отдельной ветке, выполнение опыта в контейнере `ros2-lyrical` (смена 10→5 Гц, отклонения, сбой на нуле, возврат проверки, `/clear` и `action list`), написание `parameters.md`, `tests.txt`, `report.json` | `colcon test` по workspace (23 tests, 0 failures) и `pytest` (17 passed); повтор всех команд `ros2 param set/get` и `topic hz` в контейнере; воспроизведение сбоя на ветке и его отклонение на main; локальный прогон `check_practice.py PR04 --submission .` |
+
+Дополнение 16.11.2026 (коммит `7e00f1a4`): mypy-тест ограничен каталогом
+собственного пакета (`test_mypy.py` в `patrol` и `turtle_bringup`), чтобы
+команда из инструкции `python3 -m pytest src/patrol/test` проходила и из
+корня workspace; проверено pytest из корня и из пакета, `colcon test`
+(23 tests, 0 failures) и полный живой прогон параметров в контейнере.

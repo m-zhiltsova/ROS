@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "practice_id": "PR04",
-  "commit": "8777058bd00aae30925f4379b735fae24c58070e",
+  "commit": "7e00f1a46fae9bbbfdff3d38974f6ab317f9cdd8",
   "student": "Zhiltsova Marina",
   "environment": "distrobox (Arch Linux), контейнер ros2-lyrical: ROS 2 Lyrical, ROS_DOMAIN_ID=16",
   "course_kit": {
@@ -12,6 +12,7 @@
     "colcon build --symlink-install",
     "source install/setup.bash",
     "cd src/patrol && python3 -m pytest test",
+    "python3 -m pytest src/patrol/test",
     "colcon test --event-handlers console_direct+",
     "colcon test-result --verbose",
     "ros2 launch turtle_bringup sim.launch.py",
@@ -32,6 +33,11 @@
     {
       "name": "validation_pure_function",
       "description": "validate_parameters: 10→5 Гц принято; 0, отрицательная, >30 Гц, NaN, infinity отклонены; скорости/поворот вне диапазона отклонены; границы приняты",
+      "status": "passed"
+    },
+    {
+      "name": "pytest_from_workspace_root",
+      "description": "python3 -m pytest src/patrol/test из корня workspace: mypy ограничен каталогом пакета (test_mypy.py), дубликат setup.py по всему workspace исключён; 17 passed, 1 skipped",
       "status": "passed"
     },
     {

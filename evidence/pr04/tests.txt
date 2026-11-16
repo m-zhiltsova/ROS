@@ -42,6 +42,21 @@ test/test_xmllint.py .                                                   [ 100%]
 скоростями). `test_copyright` — skipped (нарушений нет). Lint: flake8,
 mypy, pep257, xmllint — passed.
 
+## 1b. Та же команда из корня workspace (команда из инструкции ПР04)
+
+До дополнения `python3 -m pytest src/patrol/test` из корня падала на
+mypy: `ament_mypy` сканирует всё дерево текущей директории и находит
+два `setup.py` (patrol и turtle_bringup) как дубликат модуля `setup`.
+После дополнения (коммит `7e00f1a4`, `test_mypy.py` ограничивает mypy
+каталогом собственного пакета):
+
+```bash
+python3 -m pytest src/patrol/test
+# ======================== 17 passed, 1 skipped ========================
+```
+
+Оба вызова — из пакета и из корня — дают один результат.
+
 ## 2. Тесты всего workspace (colcon)
 
 ```bash
